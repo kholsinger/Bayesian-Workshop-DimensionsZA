@@ -1,0 +1,20 @@
+model {
+  ## likelihood
+  ##
+  for (i in 1:n.samp) {
+    lma[i] ~ dnorm(mu[i], tau.resid)
+    mu[i] <- beta.0 + beta.mat*mat[i]
+  }
+
+  ## priors
+  ##
+  ## regression coefficients
+  ##
+  beta.0 ~ dnorm(0.0, tau)
+  beta.mat ~ dnorm(0.0, tau)
+  ## 
+  ## residual variance
+  ##
+  tau.resid ~ dexp(phi)
+  sigma.resid <- sqrt(1.0/tau.resid)
+}

@@ -1,0 +1,17 @@
+## R files to ignore
+##
+.Rproj
+.Rproj.user
+.Rhistory
+.RData
+
+## LaTeX files to ignore
+##
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.synctex.gz
+*.toc
+*.vrb

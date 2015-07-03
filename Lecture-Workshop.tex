@@ -1,0 +1,1017 @@
+% Copyright 2007 by Till Tantau
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Public License.
+%
+% See the file doc/licenses/LICENSE for more details.
+
+
+
+\documentclass{beamer}
+
+% Setup appearance:
+
+\usetheme{}
+
+
+% Standard packages
+
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{color}
+\usepackage{amsbsy}
+\usepackage{verbatim}
+\setbeamertemplate{footline}[frame number]
+
+% Author, Title, etc.
+
+\title{An introduction to Bayesian modeling \\
+using R and JAGS}
+
+\author{
+  Instructors \\
+  Kent~Holsinger \\
+  Xiaojing~Wang % \inst{1}
+  \vskip 2mm % \inst{1} \\
+  \textit{University of Connecticut}
+  \vskip 2mm
+  ~~\textit{}
+ }
+ 
+ \date{
+{\today}}
+
+
+
+
+% The main document
+
+\begin{document}
+
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Linear Regression}
+
+One of the most common statistical procedures in ecology and
+evolution. For example,
+
+\begin{itemize}
+\item Data on LMA from 535 individuals in the genus {\it Protea\/}~(42
+  species, 48 sites, 142 unique site/species combinations)
+\item Data on mean annual temperature for each of those sites
+\end{itemize}
+
+\begin{center}
+\includegraphics[height=5.5cm]{lma-vs-mat.pdf}
+\end{center}
+
+\end{frame}
+
+\begin{frame}[fragile]{Linear Regression}
+In R
+{\tiny
+\begin{verbatim}
+> summary(lm(lma ~ mat, data=tmp))
+
+Call:
+lm(formula = lma ~ mat, data = tmp)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-0.025126 -0.005781 -0.000785  0.004647  0.044444 
+
+Coefficients:
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  0.0521895  0.0027116  19.246  < 2e-16 ***
+mat         -0.0013587  0.0001785  -7.611 1.24e-13 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.009815 on 533 degrees of freedom
+Multiple R-squared:  0.09803,	Adjusted R-squared:  0.09634 
+F-statistic: 57.93 on 1 and 533 DF,  p-value: 1.241e-13
+\end{verbatim}
+}
+
+\end{frame}
+
+\begin{frame}{Linear Regression}
+
+Remember basic assumptions of simple linear regression
+
+\begin{eqnarray*}
+y_i &=& \beta_0 + \beta_1x_i + \epsilon_i \\
+\epsilon_i &\sim& \mbox{N}(0, \sigma^2)
+\end{eqnarray*}
+
+Here's another way to write that
+
+\begin{eqnarray*}
+y_i &\sim& \mbox{N}(\mu_i, \sigma^2) \\
+\mu_i &=& \beta_0 + \beta_1x_i
+\end{eqnarray*}
+
+The second way of writing the model will be more convenient for us, so
+that's the approach we'll use.
+
+\end{frame}
+
+\begin{frame}{Statistical Analysis}
+  Statistical inference is the process of learning about the general
+  characteristics of a population from a sample.
+\begin{itemize}
+\item Characteristics often expressed in terms of parameters $\theta$. 
+\item Measurements on the subset of members given by numerical values $Y$. 
+\item Before the data are observed, both $Y$ and $\theta$ are unknown. 
+\item A probability model is assumed for observed data if we knew $\theta$ is the truth. 
+\item What if we have prior information about $\theta$?
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Bayesian Inference}
+  Bayesian inference allows us to update prior beliefs with the
+  observed data to quantify uncertainty about $\theta$.
+\begin{itemize}
+\item Prior Distribution: $p(\theta)$
+\item Sampling Model (likelihood): $p( y \mid \theta)$
+\item Posterior Distribution 
+\[
+	p(\theta \mid y)=\frac{p(y \mid \theta) p (\theta)}{p(y)} 
+\]
+\item Calculating $p(y)$ is typically very challenging. Use MCMC
+  (implemented in JAGS) to estimate $p(\theta \mid y)$.
+ 
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Linear Regression - as a Bayesian}
+
+We start with the sampling model $p(y \mid \theta)$\footnote{$\theta \in
+(\beta_0, \beta_1, \sigma^2)$}
+
+\begin{eqnarray*}
+y_i &\sim& \mbox{N}(\mu_i, \sigma^2) \\
+\mu_i &=& \beta_0 + \beta_1x_i \quad ,
+\end{eqnarray*}
+
+where $x_i$ is the value of the covariate in individual $i$. Then we
+add prior distributions $p(\theta)$
+
+\begin{eqnarray*}
+\beta_0 &\sim& \mbox{N}(0, \tau) \\
+\beta_1 &\sim& \mbox{N}(0, \tau) \\
+\sigma^2 &=& \frac{1}{\tau_{resid}} \\
+\tau_{resid} &\sim& \mbox{Exponential}(\phi)
+\end{eqnarray*}
+
+\end{frame}
+
+\begin{frame}[fragile]{Linear Regression - in R+JAGS}
+
+\begin{itemize}
+
+\item Rescale all variables to mean of 0, standard deviation of 1
+
+{\tiny
+\begin{verbatim}
+Inference for Bugs model at "simple-linear-regression.jags", fit using jags,
+ 5 chains, each with 10000 iterations (first 5000 discarded), n.thin = 5
+ n.sims = 5000 iterations saved
+             mu.vect sd.vect     2.5%      25%      50%      75%    97.5%  Rhat n.eff
+beta.0         0.000   0.041   -0.082   -0.028    0.000    0.028    0.080 1.001  5000
+beta.mat      -0.313   0.041   -0.393   -0.341   -0.314   -0.285   -0.231 1.002  1900
+sigma.resid    0.953   0.029    0.897    0.933    0.952    0.972    1.012 1.001  3700
+\end{verbatim}
+}
+\item Compare with lm() results from R
+{\tiny
+\begin{verbatim}
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  8.614e-17  4.110e-02   0.000        1    
+mat         -3.131e-01  4.114e-02  -7.611 1.24e-13 ***
+
+Residual standard error: 0.9506 on 533 degrees of freedom
+\end{verbatim}
+}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Multiple linear regression}
+
+Simple generalization of what we've already seen
+
+\begin{eqnarray*}
+y_i &\sim& \mbox{N}(\mu_i, \sigma^2) \\
+\mu_i &=& \beta_0 + \sum_{k=1}^K\beta_kx_{ik} \quad ,
+\end{eqnarray*}
+where $x_{ik}$ is the value of the $k$th covariate in individual
+$i$. The priors are
+\begin{eqnarray*}
+\beta_i &\sim& \mbox{N}(0, \tau), \quad i = 0,\dots,K \\
+\sigma^2 &=& \frac{1}{\tau_{resid}} \\
+\tau_{resid} &\sim& \mbox{Exponential}(\phi)
+\end{eqnarray*}
+
+\end{frame}
+
+\begin{frame}[fragile]{Multiple Linear Regression}
+
+From JAGS
+{\tiny
+\begin{verbatim}
+Inference for Bugs model at "multiple-linear-regression.jags", fit using jags,
+ 5 chains, each with 10000 iterations (first 5000 discarded), n.thin = 5
+ n.sims = 5000 iterations saved
+             mu.vect sd.vect     2.5%      25%      50%      75%    97.5%  Rhat n.eff
+beta.0         0.000   0.040   -0.078   -0.027    0.000    0.028    0.078 1.001  4800
+beta.cdd       0.106   0.073   -0.036    0.058    0.105    0.154    0.251 1.001  5000
+beta.elev     -0.319   0.094   -0.500   -0.384   -0.319   -0.256   -0.136 1.001  5000
+beta.inso      0.054   0.053   -0.048    0.018    0.054    0.091    0.157 1.001  5000
+beta.map      -0.022   0.078   -0.178   -0.074   -0.020    0.031    0.129 1.001  5000
+beta.mat      -0.463   0.114   -0.688   -0.541   -0.461   -0.385   -0.243 1.001  5000
+beta.ratio    -0.016   0.079   -0.172   -0.069   -0.013    0.039    0.134 1.001  5000
+sigma.resid    0.939   0.029    0.884    0.919    0.939    0.958    1.000 1.001  5000
+\end{verbatim}
+}
+
+Compare to lm() from R
+{\tiny
+\begin{verbatim}
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept) -3.520e-17  4.052e-02   0.000 1.000000    
+cdd          1.051e-01  7.315e-02   1.437 0.151291    
+elev        -3.184e-01  9.534e-02  -3.339 0.000899 ***
+inso         5.288e-02  5.287e-02   1.000 0.317702    
+map         -2.309e-02  7.749e-02  -0.298 0.765836    
+mat         -4.629e-01  1.147e-01  -4.037  6.2e-05 ***
+ratio       -1.481e-02  7.944e-02  -0.186 0.852218    
+
+Residual standard error: 0.9373 on 528 degrees of freedom 
+\end{verbatim}
+}
+
+\end{frame}
+
+\begin{frame}{Multiple Linear Regression with Species Random Effect}
+
+  $\gamma_i^{(s)}$ denotes the mean for species $s$ to which
+  inidividual $i$ belongs
+\begin{eqnarray*}
+y_i &\sim& \mbox{N}(\mu_i, \sigma^2_{resid}) \\
+\mu_i &=& \beta_0 + \sum_{k=1}^K\beta_kx_{ik} + \gamma_i^{(s)} \\
+\beta_i &\sim& \mbox{N}(0, \tau), \quad i = 0,\dots,K \\
+\sigma^2_{resid} &=& \frac{1}{\tau_{resid}} \\
+\tau_{resid} &\sim& \mbox{Exponential}(\phi) \\
+\gamma_i^{(s)} &\sim& \mbox{N}(0, \sigma^2_{species}) \\
+\sigma^2_{species} &=& \frac{1}{\tau_{species}} \\
+\tau_{species} &\sim& \mbox{Exponential}(\phi)
+\end{eqnarray*}
+
+\end{frame}
+
+\begin{frame}{Multiple Linear Regression with Species Random Effect}
+
+Alternatively
+\begin{eqnarray*}
+y_i &\sim& \mbox{N}(\mu_i, \sigma^2_{resid}) \\
+\mu_i &=& \beta_{0i}^{(s)} + \sum_{k=1}^K\beta_kx_{ik} \\
+\sigma^2_{resid} &=& \frac{1}{\tau_{resid}} \\
+\tau_{resid} &\sim& \mbox{Exponential}(\phi) \\
+\beta_{0i}^{(s)} &\sim& \mbox{N}(\beta_0, \sigma^2_{species}) \\
+\sigma^2_{species} &=& \frac{1}{\tau_{species}} \\
+\tau_{species} &\sim& \mbox{Exponential}(\phi) \\
+\beta_i &\sim& \mbox{N}(0, \tau), \quad i = 0,\dots,K \\
+\end{eqnarray*}
+
+\end{frame}
+
+\begin{frame}[fragile]{Multiple Linear Regression with Species Random
+    Effect}
+
+From JAGS
+{\tiny
+\begin{verbatim}
+beta.cdd        0.081   0.055  -0.024   0.045   0.082   0.118   0.188 1.001  3100
+beta.elev      -0.201   0.108  -0.408  -0.274  -0.201  -0.128   0.010 1.002  2400
+beta.inso      -0.073   0.058  -0.187  -0.112  -0.073  -0.034   0.040 1.001  3400
+beta.map       -0.418   0.083  -0.581  -0.474  -0.419  -0.362  -0.257 1.001  5000
+beta.mat        0.093   0.110  -0.117   0.020   0.092   0.169   0.307 1.001  5000
+beta.ratio      0.427   0.078   0.278   0.374   0.427   0.478   0.578 1.001  4800
+beta.zero      -0.064   0.154  -0.369  -0.167  -0.062   0.037   0.241 1.001  5000
+sigma.resid     0.545   0.023   0.511   0.532   0.544   0.556   0.581 1.001  3100
+sigma.species   0.966   0.117   0.767   0.884   0.960   1.036   1.218 1.001  5000
+\end{verbatim}
+}
+Compare to lmer() From R 
+{\tiny
+\begin{verbatim}
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ species  (Intercept) 0.8951   0.9461  
+ Residual             0.2924   0.5408  
+Number of obs: 535, groups:  species, 42
+
+Fixed effects:
+            Estimate Std. Error t value
+(Intercept) -0.06289    0.14898  -0.422
+cdd          0.07941    0.05576   1.424
+elev        -0.19835    0.10946  -1.812
+inso        -0.07259    0.05791  -1.254
+map         -0.42009    0.08176  -5.138
+mat          0.09811    0.10893   0.901
+ratio        0.43022    0.07776   5.533
+\end{verbatim}
+}
+
+\end{frame}
+
+\begin{frame}[fragile]{Multiple Linear Regression with Species Random
+    Effect}
+
+\includegraphics[height=8cm]{species-random-effect.pdf}
+
+\end{frame}
+
+
+\begin{frame}{Parametric Sampling Models}
+Assume 
+\[
+\left\{
+                \begin{array}{ll}
+                 Y_1, \cdots, Y_n \stackrel{i.i.d.} \sim p(y \mid \theta)   \\
+                 \theta \sim p(\theta)
+                 \end{array}
+              \right.
+\]
+Applicable if $Y_1, \cdots,  Y_n$ are
+\begin{itemize}
+\item outcomes of a repeatable experiment; 
+\item random sample from finite population with
+replacement; 
+\item sampled from an infinite population w/out replacement; 
+\item sampled from a finite population of size $N \gg n$ w/out
+replacement (approximate). 
+\end{itemize}
+Labels carry no information.
+\end{frame}
+
+\begin{frame}{Normal Model}
+Assume 
+\[
+Y_1, \cdots, Y_n \mid \mu, \sigma^2 \stackrel{i.i.d.} \sim \mathcal{N}(\mu, \sigma^2), 
+\]
+where $\mu$ and $\sigma^2$ are unknown parameters. From a Bayesian perspective, it is easier to work with the {\it precision}, $\phi$, where $\phi=1/\sigma^2$. Define ${Y}=(Y_1, \cdots, Y_n)$. 
+\begin{block}{Likelihood}
+\begin{eqnarray*}
+\mathcal{L} (\mu, \phi \mid { Y}) &\propto& \prod_{i=1}^n \frac{1}{\sqrt{2\pi}}\phi^{1/2} \exp\left\{-\frac{1}{2}\phi(Y_i-\mu)^2\right\}\\
+&\propto& \phi^{n/2} \exp\left\{-\frac{1}{2} \phi \sum_{i=1}^n (Y_i-\mu)^2\right\}. 
+\end{eqnarray*}
+\end{block}
+\end{frame}
+
+\begin{frame}{Likelihood Factorization}
+\vskip -0.25in
+\begin{eqnarray*}
+\mathcal{L} (\mu, \phi \mid {Y}) 
+&\propto& \phi^{n/2} \exp\left\{-\frac{1}{2} \phi \sum_{i=1}^n (Y_i-\mu)^2\right\}\\
+&\propto& \phi^{n/2} \exp\left\{-\frac{1}{2} \phi\sum_{i=1}^n \left[(Y_i-\overline{Y})-(\mu-\overline{Y})\right]^2\right\}\\
+ &\propto& \phi^{n/2} \exp\left\{-\frac{1}{2} \phi \left[\sum_{i=1}^n(Y_i-\overline{Y})^2+n(\mu-\overline{Y})^2\right]^2\right\}\\
+  &\propto& \phi^{n/2} \exp\left\{-\frac{1}{2} \phi s^2 (n-1)\right\} \exp\left\{\frac{1}{2}\phi n(\mu-\overline{Y})^2\right\}\\
+   &\propto& \phi^{n/2} \exp\left\{-\frac{1}{2} \phi SS\right\} \exp\left\{\frac{1}{2}\phi n(\mu-\overline{Y})^2\right\}, 
+\end{eqnarray*}
+where $\overline{Y}=\sum_{i=1}^n Y_i/n$ is the sample mean, $s^2=\sum_{i=1}^n (Y_i -\overline{Y})^2/(n-1)$ is the sample variance and $SS=\sum_{i=1}^n (Y_i-\overline{Y})^2$ is the sample sum of squares. 
+\end{frame}
+
+\begin{frame}
+\begin{block}{Conjugate Priors}
+Consider a class of prior distributions, $p(\theta) \in \mathcal{P}$.  We say that the class is conjugate for a sampling model $p(Y \mid \theta)$, if $p(\theta) \in \mathcal{P}$ implies that $p(\theta \mid y) \in  \mathcal{P}$ for all $p(\theta) \in \mathcal{P}$ and data $y$.
+\end{block}
+\begin{block}{Conjugate Normal-Gamma Prior for Normal Data}
+The conjugate prior distribution for $(\mu, \phi)$ is Normal-Gamma, i.e., 
+\begin{eqnarray*}
+\mu \mid \phi & \sim & \mathcal{N} (m_0, 1/(p_0\phi)), \\
+\phi & \sim & \mathcal{G}a (\nu_0/2, SS_0/2), 
+\end{eqnarray*}
+which is written as
+\[
+	p(\mu, \phi)\propto \phi^{\nu_0/2-1}\exp\left\{-\phi\frac{SS_0}{2}\right\} \exp\left\{-\phi\frac{p_0}{2}(\mu-m_0)^2\right\}. 
+\]
+and further we can denote it is drawn from a Normal-Gamma family  
+\[
+	\mu, \phi \sim \mathcal{NG}(m_0, p_0, \nu_0/2, SS_0). 
+\]
+\end{block}
+\end{frame}
+
+\begin{frame}{Updating the Posterior Parameters}
+Under the Normal-Gamma prior distribution, we can derive the posterior distribution 
+\begin{eqnarray*}
+\mu \mid \phi, Y &\sim& \mathcal{N}\left(m_n, \frac{1}{p_n\phi}\right), \\
+\phi \mid Y &\sim & \mathcal{G}a\left(\frac{\nu_n}{2}, \frac{SS_n}{2}\right), \\
+\mbox{where} \  p_n&=&p_0+n, \\
+m_n&=&\frac{n\overline{Y}+p_0m_0}{p_n}, \\
+\nu_n &=& \nu_0+n,  \\
+SS_n &=& SS_0+SS+\frac{np_0}{p_n}(\overline{Y}-m_0)^2. 
+\end{eqnarray*}
+The posterior distribution of $(\mu, \phi)$ can be rewritten as a Normal-Gamma family
+\[
+   \mu, \phi \mid Y \sim \mathcal{NG}(m_n, p_n, \nu_n/2, SS_n/2). 
+\]
+\end{frame}
+
+\begin{frame}{Interpretation}
+\begin{itemize}
+\item $p_n$ indicates the precision for estimating $\mu$ after getting $n$ observations. 
+\item $m_n$ is the expected value for $\mu$ after obtaining $n$ observations,  which can be viewed as a weighted average of sample mean and prior mean, i.e., 
+\[
+	m_n=\frac{n}{p_n}\overline{Y}+\frac{p_0}{p_n} m_0. 
+\]
+\item $\nu_n$ is called the degrees of freedom, by noticing that 
+\[
+	\phi \sim \mathcal{G}a(a/2, b/2)\Leftrightarrow \phi b \sim \chi_a^2\ \mbox{with degrees of freedom} \ a. 
+\]
+\item Denote $SS_n=SS_0+SS+\frac{np_0}{p_n}(\overline{Y}-m_0)^2$ as the posterior variation, where the three terms can be explained as prior variation, observed variation (sum of squares) and variation between prior mean and sample mean, respectively. 
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Marginal Distribution for $\mu \mid Y$}
+\begin{eqnarray*}
+p(\mu |Y) &\propto& \int{p(\mu,\phi | Y)d\phi}\\
+&=&\int{\phi^{\frac{\nu_n+1}{2}-1}}\exp\left[-\phi\left\{\frac{SS_n+p_n(\mu-m_n)^2}{2}\right\}\right]d\phi
+\end{eqnarray*}
+
+This has the form of a Gamma integral with $a = (\nu+ 1)/2$ and $b$ equal to the mess multiplying $\phi$ in the exponential term, so that the result is $\propto b^{-a}$ (at least that is all that matters)
+\begin{eqnarray*}
+p(\mu \mid Y) &\propto& \left\{  SS_n+p_n(\mu-m_n)^2  \right\}^{\frac{-(\nu_n+1)}{2}}\\
+&\propto& \left( \nu_n+\frac{(\mu-m_n)^2}{\frac{1}{p_n}\frac{SS_n}{\nu_n}} \right)^{-(\nu_n+1)/2}, 
+\end{eqnarray*}
+which is a Student $t_{\nu_n}(m_n,s_n^2)$ with location $m_n,\text{d}f=\nu_n$, scale $s_n^2=\frac{1}{p_n}\frac{SS_n}{\nu_n}$ and degrees of freedom being $\nu_n$. 
+\end{frame}
+
+
+\begin{frame}{Standard Student $t$}
+Standardize $X\sim t_{\delta}(l,S)$ by subtracting location and dividing by square root of the scale:
+\[
+\frac{X-l}{\sqrt{S}}\sim t_{\delta}(0,1)
+\]
+(new location 0 and scale 1)
+\[
+\Rightarrow \frac{\mu-m_n}{s_n}\sim t_{\nu_n}(0,1)
+\]
+\[
+\mu \overset{D}{=}m_n+t_{\nu_n}s_n, 
+\]
+where $t_{\nu_n}$ can be easily evaluated using $rt$, $qt$, $pt$, and $dt$ in R. 
+\end{frame}
+
+\begin{frame}{Problem}
+\begin{itemize}
+\item Data: Observe pairs $(Y_i, X_i)$, $i=1, \cdots, n$; 
+\item Response or dependent variable $Y$; 
+\item Predictor or independent variable $X$. 
+\end{itemize}
+\begin{block}{Goals}
+\begin{itemize}
+\item Exploring $p(y \mid x)$ as a function of $x$; 
+\item Understanding the mean (variability) in $Y$ as a function of $X$;
+\item Special case: Linear regression (normal $Y$).
+\end{itemize}
+\end{block}
+\end{frame}
+
+\begin{frame}{Simple Linear Regression Models}
+\[
+Y_i=\alpha+\beta X_i+\epsilon_i,  \epsilon_i \stackrel{i.i.d.}{\sim} N(0,\sigma^2)
+\]
+\begin{itemize}
+\item Estimate parameters ($\alpha$,$\beta$,$\sigma^2$);
+\item interpretation of parameters: $\beta$, $\alpha$
+\item assess model fit -- adequate? good? if inadequate, how?
+\item predict new (``future'') response at new $x_{n+1},\cdots$
+\item how much variability does $x$ explain?
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Conjugate Priors for Simple Linear Regression}
+\begin{block}{Normal-Gamma Prior}
+The Normal-Gamma distribution is conjugate for $\alpha$, $\beta$ and precision $\phi\equiv{1}/{\sigma^2}$. 
+\begin{itemize}
+\item $(\alpha,\beta)|\phi \sim N((\alpha_0,\beta_0), \phi^{-1}\Sigma)$,  where  $\Sigma$ is a $2\times 2$ matrix of variances and covariance;
+\item $\phi \sim \text{Gamma}(\nu_0/2, \nu_0\sigma^2_0/2)$. 
+\end{itemize}
+\end{block}
+\begin{block}{A Reference Prior for Regression}
+Limiting case of conjugate prior as the prior variances goes to infinity (information goes to zero)
+\[
+p(\alpha,\beta,\phi) \propto 1/\phi. 
+\]
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Theory for Inference}
+\[
+\frac{\beta-\hat{\beta}}{\sqrt{s^2_{Y|X}\frac{1}{S_{xx}}}}\sim t_{n-2}(0,1)
+\]
+
+\begin{itemize}
+\item $\hat{\beta}$ is OLS(MLE) estimate of $\beta$, $s^2_{Y|X}=\hat{\sigma}^2$ is the MSE. 
+\item (marginal) posterior for $\beta$ is a Student $t$ distribution with $n-2$ df. 
+\item Sampling distribution of $\hat{\beta}$ given $\beta$ is Student $t$ distribution with $n-2$ df. 
+\end{itemize}
+
+Used for classical and Bayesian (Reference) analysis
+
+\end{frame}
+ 
+\begin{frame}{Distributions Continued}
+\begin{itemize}
+\item (marginal) posterior for $\alpha$ is a Student $t$ distribution with $n-2$ df. 
+\item Sampling distribution of $\hat{\alpha}$ is Student $t$ distrbution with $n-2$ df. 
+\end{itemize}
+
+\[
+\frac{\alpha-\hat{\alpha}}{\sqrt{s^2_{Y|X}\left(\frac{1}{n}+\frac{\bar{x}^2}{S_{xx}}\right)}}\sim t_{n-2}(0,1)
+\]
+
+\end{frame}
+
+\begin{frame}{Significance of Regression}
+Measuring the ''explanatory power'' of predictor $X$
+\begin{itemize}
+\item Credible Intervals (HPD or equal-tailed)
+\[
+\hat{\beta}\pm t_{\alpha/2} S_{\beta}
+\]
+where $t_{\alpha/2}$ is 100 $\alpha/2\%$ quantile of a standard $t_{n-2}$ and $s_{\beta}=\sqrt{s^2_{Y|X}/S_{xx}}$
+\item Confidence Intervals:
+\[
+\hat{\beta}\pm t_{\alpha/2} SE_{\hat{\beta}}
+\]
+and $SE(\hat{\beta})=\sqrt{s^2_{Y|X}1/S_{xx}}$
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Predictions}
+The (posterior) predictive distribution for a new case, $y_{n+1}=\alpha+\beta x_{n+1}+\epsilon_{n+1}$ is also a Student $t$ distribution with $n-2$ df. 
+\begin{eqnarray*}
+y_{n+1}|y_1,\cdots,y_n &\sim & t_{n-2}(\hat{y},s^2_{y_{n+1}})\\
+\hat{y}&=& \hat{\alpha}+\hat{\beta}x_{n+1}\\
+s^2_{y_{n+1}}&=&s^2_{Y|X}\left(  1+\frac{1}{n}+\frac{(x_{n+1}-\bar{x})^2}{S_{xx}}   \right)
+\end{eqnarray*}
+
+\begin{itemize}
+\item posterior uncertainty about $\alpha+\beta x_{n+1}$
+\item depends on $x_{n+1}$ spread is higher for $x_{n+1}$ far from $\bar{x}$
+\item additional variability $+s^2_{Y|X}$ due to $\epsilon_{n+1}$
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Multiple Linear Regression Models}
+Let us assume the general linear model is
+\[
+	y_i={\bf x}_i'\boldsymbol\beta+\epsilon_i, \ \epsilon_i \sim \mathcal{N}(0, \tau^{-1}), 
+\]
+where $\tau$ is called the error precision. 
+\begin{itemize}
+\item Likelihood:
+\[
+	\mathcal{L}({\bf y, X}; \boldsymbol\beta, \tau)=\prod_{i=1}^n \sqrt{\frac{\tau}{2\pi}}\exp\left\{-\frac{\tau}{2}(y_i-{\bf x}_i'\boldsymbol\beta)^2\right\}
+\]
+\item Normal-Gamma Prior:
+\begin{eqnarray*}
+	\pi(\boldsymbol\beta, \tau)&=&\pi(\boldsymbol\beta \mid \tau)\pi(\tau)=\mathcal{N}_p(\boldsymbol\beta; \boldsymbol\beta_0, \tau^{-1}\Sigma_0)\mathcal{G} (\tau; a, b). \\
+	\pi (\boldsymbol\beta \mid \tau )&=&| 2\pi \tau^{-1}\Sigma_0 |^{-p/2} \exp\left\{-\frac{\tau}{2}(\beta-\beta_0)'\Sigma_0^{-1}(\boldsymbol\beta-\boldsymbol\beta_0)\right\},
+\end{eqnarray*}
+where $\boldsymbol\beta_0$ is the prior mean and $\Sigma_0$ is the prior covariance and 
+\[
+	\pi(\tau)=\frac{b^a}{\Gamma(a)} \tau^{a-1}\exp\left\{-b\tau\right\}. 
+\]
+\item A non-informative prior: $\pi(\boldsymbol\beta, \tau)\propto 1/\tau$. 
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Bayesian Regression with Non-informative Priors}
+\begin{itemize}
+\item The non-informative prior are invalid probabilities
+(it does not integrate to any finite number). So why is it
+that we are even discussing them?
+\item It turns out that even if the priors are improper (that's what
+we call them), as long as the resulting posterior
+distributions are valid we can still conduct legitimate
+statistical inference on them.
+\item When the non-informative prior is used, after some algebra, the joint posterior distribution of $(\boldsymbol\beta, \tau)$ is 
+\begin{eqnarray*}
+	&&\pi(\boldsymbol\beta, \tau \mid {\bf X, y})\\
+	&\propto& \mathcal{L}({\bf y, X}; \boldsymbol\beta, \tau) \pi(\boldsymbol\beta, \tau) \\
+	&\propto& (\tau)^{n/2-1} \exp\left(-\frac{\tau}{2}(\hat{\sigma}^2 (n-p)+(\boldsymbol\beta-\hat{\boldsymbol\beta})'{\bf X'X}(\boldsymbol\beta-\hat{\boldsymbol\beta})\right),
+\end{eqnarray*}
+where $
+    \hat{\boldsymbol\beta}=({\bf X'X})^{-1}{\bf X'y} \ \mbox {and} \ \hat{\sigma}^2=\frac{({\bf y-X\hat{\boldsymbol\beta}})'({\bf y-X\hat{\boldsymbol\beta}})}{n-p}$ ,
+which are the classical unbiased estimates of the regression
+parameter $\boldsymbol\beta$ and $\sigma^2=\tau^{-1}$. 
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Bayesian Regression with Non-informative Priors (Cont.)}
+\begin{itemize}
+\item The marginal posterior distribution of $\tau$ is actually a Gamma distribution, i.e., $\tau \mid {\bf X,y}\sim \mathcal{G}((n-p)/2, (n-p)\hat{\sigma}^2/2)$. In other words, $\sigma^2$ follow a inverse Gamma distribution, i.e., $\sigma^2 \mid {\bf X,y} \sim \mathcal{IG}((n-p)/2, (n-p)\hat{\sigma}^2/2)$.  That implies $(n-p)\hat{\sigma}^2/\sigma^2 \mid {\bf X, y} \sim \chi_{n-p}^2$. 
+\item A striking similarity with the classic result: The distribution of $\hat{\sigma}^2$  is also characterized as $(n-p)\hat{\sigma}^2/\sigma^2$ following a chi-square distribution with $n-p$ degrees of freedom.
+\item The marginal posterior distribution of $\boldsymbol\beta$ follows a multivariate $t$ distribution, i.e., 
+\begin{eqnarray*}
+	\pi(\boldsymbol\beta \mid {\bf X, y})&=&\frac{\Gamma (n/2)}{\pi^{p/2} (n-p)^{p/2}\Gamma((n-p)/2) s^p|({\bf X'X})|^{-1/2}}\\
+	&\times&\left[1+\frac{(\boldsymbol\beta-\hat{\boldsymbol\beta})'{\bf X'X}(\boldsymbol\beta-\hat{\boldsymbol\beta})}{(n-p)\hat{\sigma}^2}\right]^{-n/2}, 
+\end{eqnarray*}
+which we denote as $\boldsymbol\beta \mid {\bf X, y}\sim \mathcal{{\bf t}}_{n-p} (\hat{\boldsymbol\beta}, \hat{\sigma}^2 ({\bf X'X})^{-1})$. 
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Interpretation}
+Under the non-informative prior $\pi(\boldsymbol\beta, \tau)\propto 1/\tau$, 
+\begin{itemize}
+\item Marginally $\beta_j \mid {\bf X,y} \sim t_{n-p}(\hat{\beta}_j, s_{\beta_j}^2)$, where $s_{\beta_j}^2$ is the $j$th element on the diagonal of $\hat{\sigma}^2 ({\bf X'X})^{-1}$. 
+\item  HPD interval $\hat{\beta}_j \pm t_{n-p, \alpha/2} s_{\beta_j}$. 
+\end{itemize}
+Question: How probable is $\beta_j = 0$ under the posterior? 
+\begin{itemize}
+\item Informal ``test'': Probability in tails = signifcance level =
+(Bayesian) p-value
+\[
+       \mbox{$p$-value}={\rm P}(|t| > |\hat{\beta}_j/s_{{\beta}_j}|). 
+\]
+\item Lindley's Method: Lindley suggested rejecting the hypothesis that $\beta_j=0$ at the $\alpha$ level of significance if the $100(1-\alpha)\%$ HPD region does not include $0$, i.e., 
+\[
+	0\notin (\hat{\beta}_j - t_{n-p, \alpha/2} s_{\beta_j}, \hat{\beta}_j +t_{n-p, \alpha/2} s_{\beta_j}). 
+\]
+which is equivalent to comparing the p-value to $\alpha$ and concluding that the
+regression is significant if the p-value is less than $\alpha$.
+\end{itemize}
+\end{frame}
+
+
+
+\begin{frame}{Bayes Factor}
+Testing $H_0: \beta_j=0$ versus $H_a:\beta_j\neq 0$. 
+\begin{itemize}
+\item Assign prior probabilities to $H_0$ and $H_a$. 
+\item Find ${\rm P}(H_i \mid {\bf y} )$ via Bayes Theorem. 
+\end{itemize}
+Bayes Factor for comparing evidence in favor of $H_0$
+\[
+	BF[H_0: H_a]=\frac{P(H_0 \mid {\bf y})/p(H_0)}{P(H_a \mid {\bf y})/p(H_a)}. 
+\]
+Often difficult to calculate, instead use lower bound based on p-values (Berger, Sellke and Bayarri, 2001)
+\[
+	BF[H_0: H_a]=-ep\log(p). 
+\]
+\end{frame}
+
+\begin{frame}{Jeffreys Scale of Evidence}
+\begin{center}
+\includegraphics[scale=0.5]{BFTABLE}
+\end{center}
+Here $B=BF[H_0: H_a]$. 
+\end{frame}
+
+
+\begin{frame}{Problems with Multicollinearity}
+\begin{itemize}
+\item Variables may appear to be unimportant (when they are). 
+\item  Coefficient estimates are unstable and hard to interpret (can estimate combinations of coefficients but not individual coefficients). 
+\end{itemize}
+
+Alternative Bayesian solutions:
+\begin{itemize}
+\item Independent Prior Distributions
+\item Variable Selection
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Hierarichal Model with Independent Priors}
+Hierarchical Model:
+\begin{equation*}
+\begin{aligned}
+\beta_j|\lambda_j,\sigma^2 &\sim N(0,\sigma^2/\lambda_j)\\
+ \lambda_j|\sigma^2 &\sim G(1/2,1/2)\\
+1/\sigma^2 &\sim G(\nu_0/2,\nu_0\sigma_0^2/2)
+\end{aligned}
+\end{equation*}
+
+\begin{itemize}
+\item leads to nice conjugate updates for all full conditionals. 
+\item Easy to code in WinBUGS ({\color{red}JAGS?})
+\item Allows each parameter to have own precision with mean 1
+\item Usually re-scale $X$ so that columns have mean 0 and standard deviation $1$. 
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Cauchy Prior}
+First two equations imply that $\beta_j |\sigma^2 \sim C(0,\sigma^2)$
+\[
+p(\beta)=\frac{1}{\pi\sigma}\left(1+\frac{\beta^2}{\sigma^2} \right)^{-1}
+\]
+leading to a collapsed model
+\begin{equation*}
+\begin{aligned}
+{\bf Y}|\beta,\sigma^2 &\sim N({\bf X\beta},\sigma^2{\bf I_n})\\
+\beta_j|\sigma^2 &\sim C(0,\sigma^2)\\
+1/\sigma^2 &\sim G(\nu_0/2,\nu_0\sigma_0^2/2)
+\end{aligned}
+\end{equation*}
+No nice full conditional for $\beta_j$. 
+\end{frame}
+
+\begin{frame}{Metropolis-Hastings Algorithm}
+For $\theta_j$
+\begin{itemize}
+\item propose a new $\theta_j^*\sim q(\cdot | \theta_j^t)$
+\item Sampling from the wrong distribution!
+\item Need to balance acceptance of proposed values so that we have samples that represent the posterior
+\item Metropolis-Hastings ratio
+\[
+\alpha=\frac{p({\bf Y}|\theta^*)p(\theta^*)/q(\theta^*|\theta^{(t)})}{p({\bf Y}|\theta^{(t)})p(\theta^{(t)})/q(\theta^{(t)}|\theta^*)}
+\]
+\item if $\alpha<1$ set
+\[
+\theta^{(t+1)}=\left\{
+\begin{array}{ll}
+\theta^*& \mbox{with probability $\alpha$}\\
+\theta^{(t)} & \mbox{with probability $1-\alpha$}
+\end{array}
+\right. 
+\]
+Otherwiese if $\alpha>1$ set $\theta^{(t+1)}=\theta^{*}$
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Metropolis Algorithm}
+Simplest version is called Random-Walk Metropolis
+\begin{itemize}
+\item Take $q(\theta|\theta(t))$ to be a symmetric density
+\item Normal density centered at $\theta^{(t)}$ with variance $c^2$
+\item ratio of proposals cancels!
+\end{itemize}
+\hfill \break
+\texttt{\small{
+thetastar = rnorm(1, theta[t], c)\\
+alpha = min(1, ((logL(thetastar) + logprior(thetastar) -(logL(theta[t]) +logprior(theta[t])))\\
+u = log(runif(1))\\
+theta[t+1] = theta[t]\\
+if (u < alpha) theta[t+1] = thetastar}
+}
+\hfill \break
+
+Can repeat for each $\theta_j$. 
+\end{frame}
+
+\begin{frame}{Model Selection}
+Selection of a single model has the following problems
+\begin{itemize}
+\item When the criteria suggest that several models are equally
+good, what should we report? Still pick only one model?
+\item What do we report for our uncertainty after selecting a model?
+\end{itemize}
+Typical analysis ignores model uncertainty!
+\end{frame}
+
+\begin{frame}{Bayesian Model Choice}
+\begin{itemize}
+\item Models for the variable selection problem are based on a
+subset of the ${\bf x}_1, \cdots, {\bf x}_p$ variables. 
+\item Encode models with a vector $\boldsymbol\gamma=(\gamma_1, \cdots, \gamma_p)'$ where $\gamma_j \in \{0,1\}$ is is an indicator for whether variable ${\bf x}_j$ should be
+included in the model $M_{\boldsymbol\gamma}$.  Notice $\gamma_j=0\Leftrightarrow \beta_j=0$. 
+\item Each value of $\boldsymbol\gamma$ represents one of the $2^p$ models. 
+\item Under model $M_{\boldsymbol\gamma}$:
+\[
+	{\bf y} \mid \boldsymbol\beta, \boldsymbol\gamma, \tau \sim \mathcal{N}({\bf X}_{\boldsymbol\gamma}\boldsymbol\beta_{\boldsymbol\gamma}, \tau^{-1}{\bf I})
+\]
+where ${\bf X}_{\boldsymbol\gamma}$ is design matrix using the columns in $\bf X$ where $\gamma_j=1$ and $\boldsymbol\beta_{\boldsymbol\gamma}$ is the subset of $\boldsymbol\beta$ that are non-zero. 
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Bayesian Model Averaging}
+Rather than use a single model, BMA uses all (or potentially a lot)
+models, but weights model predictions by their posterior
+probabilities (measure of how much each model is supported by
+the data). 
+\begin{itemize}
+\item Posterior model probabilities
+\[
+	{\rm P}(M_j \mid {\bf y})=\frac{{\rm P}({\bf y}\mid M_j){\rm P}(M_j)}{\sum_{j}{\rm P}({\bf y}\mid M_j){\rm P}(M_j)}, 
+\]
+Marginal likelihod of a model is 
+\[
+	{\rm P}({\bf y}\mid M_{\boldsymbol\gamma})=\int \int {\rm P}({\bf y} \mid \boldsymbol\beta_{\boldsymbol\gamma}, \tau) {\rm P}(\boldsymbol\beta_{\boldsymbol\gamma} \mid \boldsymbol\gamma, \tau) {\rm P}(\tau \mid \boldsymbol\gamma) d\boldsymbol\beta_{\boldsymbol\gamma} d\tau. 
+\]
+\item Probability $\beta_j\neq 0$: $\sum_{M_j: \beta_j\neq 0} {\rm P}(M_j \mid {\bf y})$. 
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Bayesian Model Averaging (Continued)}
+\begin{itemize}
+\item Predictions 
+\[
+	{\rm P}({\bf y}^{new} \mid {\bf y})=\sum_{j} {\rm P}({\bf y}^{new} \mid {\bf y}, M_j) {\rm P}(M_j \mid {\bf y}),
+\]
+where
+\[
+	{\rm P}({\bf y}^{new} \mid {\bf y}, M_{\boldsymbol\gamma})=\int {\rm P}({\bf y}^{new} \mid {\bf y}, \boldsymbol\beta_{\boldsymbol\gamma}, \tau) {\rm P}(\boldsymbol\beta_{\boldsymbol\gamma}, \tau \mid {\bf y}) d \boldsymbol\beta_{\boldsymbol\gamma} d\tau. 
+\]
+
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Prior Distributions}
+\begin{itemize}
+\item Bayesian Model choice requires proper prior distributions on
+regression coefficients.
+\item Vague but proper priors may lead to paradoxes!
+\item Conjugate Normal-Gammas lead to closed form expressions
+for marginal likelihoods, Zellner's g-prior is the most popular.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Zellner's g-prior}
+Centered model:
+\[
+		{\bf y}={\bf 1}_n \alpha+ \tilde{\bf X}_c\boldsymbol\beta+\boldsymbol\epsilon,
+\]
+where $\tilde{\bf X}_c=({\bf I}_n-1/n {\bf J}_n){\bf X}$ is the centered design matrix where all variables have had their mean subtracted.
+\begin{itemize}
+\item $\pi(\alpha)\propto 1$;
+\item $\pi(\tau)\propto 1/\tau$;
+\item $\boldsymbol\beta \mid \tau, \boldsymbol\gamma \sim \mathcal{N}({\bf 0}, g\tau^{-1} (\tilde{\bf X}_c'\tilde{\bf X}_c)^{-1})$;
+\item take $g=n$. 
+\end{itemize}
+which leads to marginal likelihood of $M_{\boldsymbol\gamma}$ that is proportional to
+\[
+	{\rm P}({\bf y} \mid M_{\boldsymbol\gamma}, g)\propto \frac{(1+g)^{(n-p_{\boldsymbol\gamma}-1)/2}}{(1+g(1-R_{\boldsymbol\gamma}^2))^{(n-1)/2}},
+\]
+where $R_{\boldsymbol\gamma}^2$ is the ordinary coefficient of determination of regression model $M_{\boldsymbol\gamma}$. 
+
+Lastly, assign uniform distribution to space of models. 
+\end{frame}
+
+
+
+\begin{frame}{Air Pollution Data ({\color{red} KENT: REPLACE WITH YOUR EXAMPLE?)}}
+\begin{itemize}
+\item Response $SO_2$ measurements in $41$ metropolitan areas. 
+\item Predictors: 
+\begin{itemize}
+\item temp
+\item mfgfirms
+\item popn
+\item wind
+\item precip
+\item raindays
+\end{itemize}
+Model for $SO_2$ as a function of the other variables?
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Scatterplot Matrix}
+Original Variables\\
+\begin{center}
+\includegraphics[scale=0.5]{SMP}
+\end{center}
+\end{frame}
+
+\begin{frame}{Scatterplot Matrix}
+Transformed Predictor Variables\\
+\begin{center}
+\includegraphics[scale=0.275]{p_22}
+\end{center}
+\end{frame}
+
+\begin{frame}{Residual Plots}
+\begin{center}
+\includegraphics[scale=0.275]{p_21}
+\end{center}
+\end{frame}
+
+\begin{frame}{BoxCox Profile Likelihood}
+\begin{center}
+\includegraphics[scale=0.275]{p_bc}
+\end{center}
+$\lambda\approx-0.5$. 
+\end{frame}
+
+\begin{frame}{Residual Plots}
+\begin{center}
+\includegraphics[scale=0.275]{p_23}
+\end{center}
+\end{frame}
+
+\begin{frame}
+\begin{table}[ht]
+\centering
+\caption{Least Squares Estimates of the Coefficients}
+\begin{tabular}{rrrrr}
+  \hline
+ & Estimate & Std. Error & t value & Pr($>$$|$t$|$) \\ 
+  \hline
+(Intercept) & -0.2287 & 0.1594 & -1.43 & 0.1605 \\ 
+  temp & 0.0076 & 0.0022 & 3.46 & {\color{red}0.0015} \\ 
+  log(mfgfirms) & -0.0284 & 0.0187 & -1.52 & 0.1389 \\ 
+  log(popn) & 0.0097 & 0.0226 & 0.43 & 0.6713 \\ 
+  wind & 0.0216 & 0.0064 & 3.39 & {\color{red}0.0018} \\ 
+  precip & -0.0018 & 0.0013 & -1.39 & 0.1746 \\ 
+  raindays & -0.0001 & 0.0006 & -0.21 & 0.8327 \\ 
+   \hline
+\end{tabular}
+\end{table}
+\end{frame}
+
+\begin{frame}{Pollution Example}
+\begin{itemize}
+\item Temperature is a significant predictor of $SO_2$ according to the $p$-value. 
+\item Lower bound on Bayes Factor
+\[
+	BF[H_0: H_a]=-e p \log(p)=0.027
+\]
+Here $p$ is the $p$-value. 
+\item Strong evidence against that the ccoefficient of Temperature is zero. 
+\end{itemize}
+\end{frame}
+
+\begin{frame}{USair Data}
+\begin{center}
+\includegraphics[scale=0.25]{p_a}
+\end{center}
+\end{frame}
+
+\begin{frame}{Model Space}
+\begin{center}
+\includegraphics[scale=0.4]{poll_image}
+\end{center}
+\end{frame}
+
+\begin{frame}{Coefficient}
+\begin{center}
+\includegraphics[scale=0.5]{poll_beta}
+\end{center}
+\end{frame}
+
+
+\begin{frame}{Stochastic Search Variable Selection}
+The Spike-and-Slab prior: 
+\begin{eqnarray*}
+	\beta_j \mid \gamma_j, c, \tau_j^2 &\sim& (1-\gamma_j)\mathcal{N}(0, \tau_j^2)+\gamma_j \mathcal{N}(0, \tau_j^2 c^2) \\
+	\gamma_j \mid \pi_j &\sim& Bernoulli(\pi_j)
+\end{eqnarray*}
+\begin{columns}
+\begin{column}{0.5\textwidth}
+        \includegraphics[scale=0.75]{SAS}
+    \end{column}
+    \begin{column}{0.47\textwidth}
+        \begin{itemize}
+            \item $\gamma_j=0$: Variable not in the model; 
+            \item $\gamma_j=1$:  Variable in the model;
+            \item  Calibration of hyper-parameters $c$, $\tau_j^2$ needed.     
+        \end{itemize}
+    \end{column}
+\end{columns}
+\end{frame}
+
+\begin{frame}
+\begin{block}{Inference for Variable Selection}
+\begin{itemize}
+\item Highest posterior model (HPM): Select a model that has been visited most often. 
+\item Median probability model (MPM): Select variables that appear at least in 50\% of visited models.
+\end{itemize}
+\end{block}
+\begin{block}{Alternative spike and slab models}
+\begin{itemize}
+\item Popular approach in genomic research;
+\item Variants:
+\begin{itemize}
+\item Conjugate version: 
+\[
+	\beta_j \mid \gamma_j, c, \tau_j^2 \sim (1-\gamma_j)\mathcal{N}(0, \sigma^2\tau_j^2)+\gamma_j \mathcal{N}(0, \sigma^2 \tau_j^2 c^2). 
+\]
+\item Replace the spike normal in Spike-and-Slab prior by Dirac, i.e., 
+\[
+      \beta_j \mid \gamma_j, \tau_j^2 \sim (1-\gamma_j)\delta_0+\gamma_j \mathcal{N}(0, \tau_j^2). 
+\]
+\end{itemize}
+\end{itemize}
+\end{block}
+\end{frame}
+
+
+
+\end{document}

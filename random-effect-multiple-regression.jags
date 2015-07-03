@@ -1,0 +1,34 @@
+model {
+  ## likelihood
+  ##
+  for (i in 1:n.samp) {
+    lma[i] ~ dnorm(mu[i], tau.resid)
+    mu[i] <- beta.0[species[i]] + beta.mat*mat[i] + beta.map*map[i] 
+             + beta.ratio*ratio[i] + beta.cdd*cdd[i]
+             + beta.inso*inso[i] + beta.elev*elev[i]
+  }
+
+  ## priors
+  ##
+  ## regression coefficients
+  ##
+  for (i in 1:n.species) {
+    beta.0[i] ~ dnorm(beta.zero, tau.species)
+  }
+  beta.zero ~ dnorm(0.0, tau)
+  beta.mat ~ dnorm(0.0, tau)
+  beta.map ~ dnorm(0.0, tau)
+  beta.ratio ~ dnorm(0.0, tau)
+  beta.cdd ~ dnorm(0.0, tau)
+  beta.inso ~ dnorm(0.0, tau)
+  beta.elev ~ dnorm(0.0, tau)
+  ## 
+  ## residual variance
+  ##
+  tau.resid ~ dexp(phi)
+  sigma.resid <- sqrt(1.0/tau.resid)
+  ## species random effect variance
+  ##
+  tau.species ~ dexp(phi)
+  sigma.species <- sqrt(1.0/tau.species)
+}
