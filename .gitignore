@@ -15,3 +15,7 @@
 *.synctex.gz
 *.toc
 *.vrb
+
+## ignore Emacs backup files
+##
+*~

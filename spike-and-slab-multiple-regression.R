@@ -8,8 +8,7 @@ n.burnin <- 5000
 n.iter <- 10000
 n.thin <- 5
 
-## prior precision on regression coefficients
-##
+## prior parameter for precision of regression coefficients
 tau <- 0.1
 ## prior parameter for precisions
 ##
@@ -35,13 +34,15 @@ jags.par <- c("beta.0",
               "beta.inso",
               "beta.elev",
               "beta.zero",
+              "gamma",
+              "pi",
               "sigma.resid",
               "sigma.species")
 
 fit <- jags(data=jags.data,
             inits=NULL,
             parameters=jags.par,
-            model.file="random-effect-multiple-regression.jags",
+            model.file="spike-and-slab-multiple-regression.jags",
             n.chains=n.chains,
             n.burnin=n.burnin,
             n.iter=n.iter,

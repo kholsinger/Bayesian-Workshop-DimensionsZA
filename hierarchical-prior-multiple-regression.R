@@ -8,9 +8,13 @@ n.burnin <- 5000
 n.iter <- 10000
 n.thin <- 5
 
-## prior precision on regression coefficients
+## parameters for gamma prior on precision of t for regression
+## coefficients 
 ##
-tau <- 0.1
+## With nu.0 <- 2.0, sigma2.0 <- 1.0 ==> dgamma(1.0, 1.0)
+##
+nu.0 <- 2.0
+sigma2.0 <- 1.0
 ## prior parameter for precisions
 ##
 phi <- 1
@@ -25,7 +29,8 @@ jags.data <- c("lma",
                "species",
                "n.samp",
                "n.species",
-               "tau",
+               "nu.0",
+               "sigma2.0",
                "phi")
 jags.par <- c("beta.0",
               "beta.mat",
@@ -41,7 +46,7 @@ jags.par <- c("beta.0",
 fit <- jags(data=jags.data,
             inits=NULL,
             parameters=jags.par,
-            model.file="random-effect-multiple-regression.jags",
+            model.file="hierarchical-prior-multiple-regression.jags",
             n.chains=n.chains,
             n.burnin=n.burnin,
             n.iter=n.iter,

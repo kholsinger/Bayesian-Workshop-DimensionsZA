@@ -1,0 +1,43 @@
+model {
+  ## likelihood
+  ##
+  for (i in 1:n.samp) {
+    lma[i] ~ dnorm(mu[i], tau.resid)
+    mu[i] <- beta.0[species[i]] + beta.mat*mat[i] + beta.map*map[i] 
+             + beta.ratio*ratio[i] + beta.cdd*cdd[i]
+             + beta.inso*inso[i] + beta.elev*elev[i]
+  }
+
+  ## priors
+  ##
+  ## regression coefficients
+  ##
+  for (i in 1:n.species) {
+    beta.0[i] ~ dnorm(beta.zero, tau.species)
+  }
+  ##
+  ## t distribution with 1 df is Cauchy
+  ##
+  beta.zero ~ dnorm(0.0, tau)
+  beta.mat <- theta[5]*gamma[5]
+  beta.map <- theta[4]*gamma[4]
+  beta.ratio <- theta[6]*gamma[6]
+  beta.cdd <- theta[1]*gamma[1]
+  beta.inso <- theta[3]*gamma[3]
+  beta.elev <- theta[2]*gamma[2]
+  for (i in 1:6) {
+    theta[i] ~ dnorm(0.0, tau)
+    gamma[i] ~ dbern(pi)
+  }
+  pi ~ dunif(0,1)
+  ## 
+  ## residual variance
+  ##
+  tau.resid ~ dexp(phi)
+  sigma.resid <- sqrt(1.0/tau.resid)
+  ##
+  ## species random effect variance
+  ##
+  tau.species ~ dexp(phi)
+  sigma.species <- sqrt(1.0/tau.species)
+}
