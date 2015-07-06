@@ -28,12 +28,12 @@ model {
   ## 
   ## residual variance
   ##
-  tau.resid ~ dexp(phi)
+  tau.resid ~ dgamma(1.0, phi)
   sigma.resid <- sqrt(1.0/tau.resid)
   ##
   ## species random effect variance
   ##
-  tau.species ~ dexp(phi)
+  tau.species ~ dgamma(1.0, phi)
   sigma.species <- sqrt(1.0/tau.species)
   ##
   ## variance of Cauchy

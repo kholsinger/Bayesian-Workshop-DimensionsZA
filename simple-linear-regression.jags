@@ -15,6 +15,6 @@ model {
   ## 
   ## residual variance
   ##
-  tau.resid ~ dexp(phi)
+  tau.resid ~ dgamma(1.0, phi)
   sigma.resid <- sqrt(1.0/tau.resid)
 }

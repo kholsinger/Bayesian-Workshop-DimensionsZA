@@ -183,21 +183,23 @@ that's the approach we'll use.
 \begin{frame}{Metropolis-Hastings Algorithm}
 For $\theta_j$
 \begin{itemize}
-\item propose a new $\theta_j^*\sim q(\theta^{(t)} | \theta_j^t)$
+\item Propose a new $\theta_j^*\sim q(\theta_j^{(t)} | \theta_j^t)$
 \item Calculate Metropolis-Hastings ratio
 \[
-\alpha=\frac{p({\bf Y}|\theta^*)p(\theta^*)/q(\theta^*|\theta^{(t)})}{p({\bf Y}|\theta^{(t)})p(\theta^{(t)})/q(\theta^{(t)}|\theta^*)}
+\alpha=\frac{p({Y}|\theta_j^*)p(\theta_j^*)/q(\theta_j^*|\theta_j^{(t)})}{p({Y}|\theta_j^{(t)})p(\theta_j^{(t)})/q(\theta_j^{(t)}|\theta_j^*)}
 \]
 \item if $\alpha<1$ set
 \[
-\theta^{(t+1)}=\left\{
+\theta_j^{(t+1)}=\left\{
 \begin{array}{ll}
-\theta^*& \mbox{with probability $\alpha$}\\
-\theta^{(t)} & \mbox{with probability $1-\alpha$}
+\theta_j^*& \mbox{with probability $\alpha$}\\
+\theta_j^{(t)} & \mbox{with probability $1-\alpha$}
 \end{array}
 \right.
 \]
-If $\alpha>1$ set $\theta^{(t+1)}=\theta^{*}$
+If $\alpha>1$ set $\theta_j^{(t+1)}=\theta_j^{*}$
+\item Repeat for $j=1,\dots,J$
+\item Repeat for $t=1,\dots,T$
 \end{itemize}
 
 \end{frame}
@@ -224,27 +226,22 @@ If $\alpha>1$ set $\theta^{(t+1)}=\theta^{*}$
 
 \begin{frame}{Linear Regression - as a Bayesian}
 
-We start with the sampling model $p(y \mid \theta)$\footnote{$\theta \in
-(\beta_0, \beta_1, \sigma^2)$}
-
+We start with the sampling model $p(y \mid \theta)$, where $\theta=(\beta_0, \beta_1, \sigma^2)'$, 
 \begin{eqnarray*}
-y_i &\sim& \mbox{N}(\mu_i, \sigma^2) \\
-\mu_i &=& \beta_0 + \beta_1x_i \quad ,
+y_i &\sim& \mbox{N}(\mu_i, \sigma^2) \ , \\
+\mu_i &=& \beta_0 + \beta_1x_i \ , 
 \end{eqnarray*}
-
-where $x_i$ is the value of the covariate in individual $i$. Then we
-add prior distributions $p(\theta)$
-
+and $x_i$ is the value of the covariate in individual $i$. Then we
+add prior distributions $p(\theta)$, 
 \begin{eqnarray*}
-\beta_0 &\sim& \mbox{N}(0, \tau) \\
-\beta_1 &\sim& \mbox{N}(0, \tau) \\
-\sigma^2 &=& \frac{1}{\tau_{resid}} \\
-\tau_{resid} &\sim& \mbox{Exponential}(\phi)
+\beta_0 &\sim& \mbox{N}(0, \tau^{-1}), \\
+\beta_1 &\sim& \mbox{N}(0, \tau^{-1}), \\
+\sigma^2 &=& \frac{1}{\tau_{resid}}, \\
+\tau_{resid} &\sim& \mbox{Gamma}(1,\phi)
 \end{eqnarray*}
-
 \end{frame}
 
-\begin{frame}[fragile]{Linear Regression - in R+JAGS}
+\begin{frame}[fragile]{Linear Regression - in R+JAGS\footnote{simple-linear-regression.jags}}
 
 \begin{itemize}
 
@@ -275,25 +272,24 @@ Residual standard error: 0.9506 on 533 degrees of freedom
 
 \end{frame}
 
-\begin{frame}{Multiple linear regression}
+\begin{frame}{Multiple Linear Regression}
 
 Simple generalization of what we've already seen
-
 \begin{eqnarray*}
-y_i &\sim& \mbox{N}(\mu_i, \sigma^2) \\
-\mu_i &=& \beta_0 + \sum_{k=1}^K\beta_kx_{ik} \quad ,
+y_i &\sim& \mbox{N}(\mu_i, \sigma^2) \ ,  \\
+\mu_i &=& \beta_0 + \sum_{k=1}^K\beta_kx_{ik} \ ,
 \end{eqnarray*}
 where $x_{ik}$ is the value of the $k$th covariate in individual
 $i$. The priors are
 \begin{eqnarray*}
-\beta_i &\sim& \mbox{N}(0, \tau), \quad i = 0,\dots,K \\
-\sigma^2 &=& \frac{1}{\tau_{resid}} \\
-\tau_{resid} &\sim& \mbox{Exponential}(\phi)
+\beta_k &\sim& \mbox{N}(0, \tau^{-1}), \quad k = 0,\dots,K \ , \\
+\sigma^2 &=& \frac{1}{\tau_{resid}} \ ,  \\
+\tau_{resid} &\sim& \mbox{Gamma}(1,\phi). 
 \end{eqnarray*}
 
 \end{frame}
 
-\begin{frame}[fragile]{Multiple Linear Regression}
+\begin{frame}[fragile]{Multiple Linear Regression\footnote{multiple-linear-regression.jags}}
 
 From JAGS
 {\tiny
@@ -336,14 +332,14 @@ Residual standard error: 0.9373 on 528 degrees of freedom
   $\gamma_i^{(s)}$ denotes the mean for species $s$ to which
   inidividual $i$ belongs
 \begin{eqnarray*}
-y_i &\sim& \mbox{N}(\mu_i, \sigma^2_{resid}) \\
-\mu_i &=& \beta_0 + \sum_{k=1}^K\beta_kx_{ik} + \gamma_i^{(s)} \\
-\beta_i &\sim& \mbox{N}(0, \tau), \quad i = 0,\dots,K \\
-\sigma^2_{resid} &=& \frac{1}{\tau_{resid}} \\
-\tau_{resid} &\sim& \mbox{Exponential}(\phi) \\
-\gamma_i^{(s)} &\sim& \mbox{N}(0, \sigma^2_{species}) \\
-\sigma^2_{species} &=& \frac{1}{\tau_{species}} \\
-\tau_{species} &\sim& \mbox{Exponential}(\phi)
+y_i &\sim& \mbox{N}(\mu_i, \sigma^2_{resid})\ ,  \\
+\mu_i &=& \beta_0 + \sum_{k=1}^K\beta_kx_{ik} + \gamma_i^{(s)}\ , \\
+\beta_k &\sim& \mbox{N}(0, \tau^{-1}), \quad k = 0,\dots,K \ , \\
+\sigma^2_{resid} &=& \frac{1}{\tau_{resid}} \ ,  \\
+\tau_{resid} &\sim& \mbox{Gamma}(1,\phi) \ , \\
+\gamma_i^{(s)} &\sim& \mbox{N}(0, \sigma^2_{species}) \ ,  \\
+\sigma^2_{species} &=& \frac{1}{\tau_{species}}\ ,  \\
+\tau_{species} &\sim& \mbox{Gamma}(1,\phi) \ . 
 \end{eqnarray*}
 
 \end{frame}
@@ -352,14 +348,14 @@ y_i &\sim& \mbox{N}(\mu_i, \sigma^2_{resid}) \\
 
 Alternatively
 \begin{eqnarray*}
-y_i &\sim& \mbox{N}(\mu_i, \sigma^2_{resid}) \\
-\mu_i &=& \beta_{0i}^{(s)} + \sum_{k=1}^K\beta_kx_{ik} \\
-\sigma^2_{resid} &=& \frac{1}{\tau_{resid}} \\
-\tau_{resid} &\sim& \mbox{Exponential}(\phi) \\
-\beta_{0i}^{(s)} &\sim& \mbox{N}(\beta_0, \sigma^2_{species}) \\
-\sigma^2_{species} &=& \frac{1}{\tau_{species}} \\
-\tau_{species} &\sim& \mbox{Exponential}(\phi) \\
-\beta_i &\sim& \mbox{N}(0, \tau), \quad i = 0,\dots,K \\
+y_i &\sim& \mbox{N}(\mu_i, \sigma^2_{resid})\ ,  \\
+\mu_i &=& \beta_{0i}^{(s)} + \sum_{k=1}^K\beta_kx_{ik} \ , \\
+\sigma^2_{resid} &=& \frac{1}{\tau_{resid}} \ , \\
+\tau_{resid} &\sim& \mbox{Gamma}(1,\phi)\ ,  \\
+\beta_{0i}^{(s)} &\sim& \mbox{N}(\beta_0, \sigma^2_{species}) \ ,  \\
+\sigma^2_{species} &=& \frac{1}{\tau_{species}} \ , \\
+\tau_{species} &\sim& \mbox{Gamma}(1,\phi) \ , \\
+\beta_i &\sim& \mbox{N}(0, \tau), \quad i = 0,\dots,K\ . \\
 \end{eqnarray*}
 
 \end{frame}
@@ -780,8 +776,7 @@ Hierarchical Model:
 
 \begin{itemize}
 % \item leads to nice conjugate updates for all full conditionals.
-\item {\color{red}{Xiaojing: Add brief statement of why this might reduce
-      problem of collinearity relative to independent Normal priors}}
+\item Leads to nice conjugate updates for all full conditionals
 \item Easy to code in JAGS
 \item Allows each parameter to have own precision with mean 1
 \end{itemize}
@@ -791,14 +786,14 @@ Hierarchical Model:
 \begin{frame}{Cauchy Prior}
 First two equations imply that $\beta_j |\sigma^2 \sim \mbox{Cauchy}(0,\sigma^2)$
 \[
-p(\beta)=\frac{1}{\pi\sigma}\left(1+\frac{\beta^2}{\sigma^2} \right)^{-1}
+p(\beta)=\frac{1}{\pi\sigma}\left(1+\frac{\beta^2}{\sigma^2} \right)^{-1}, 
 \]
 leading to a collapsed model
 \begin{equation*}
 \begin{aligned}
-{\bf Y}|\beta,\sigma^2 &\sim \mbox{N}({\bf X\beta},\sigma^2{\bf I_n})\\
-\beta_j|\sigma^2 &\sim \mbox{Cauchy}(0,\sigma^2)\\
-1/\sigma^2 &\sim \mbox{Gamma}(\nu_0/2,\nu_0\sigma_0^2/2)
+Y|\boldsymbol\beta,\sigma^2 &\sim \mbox{N}({X\boldsymbol\beta},\sigma^2{I}_n)\ , \\
+\beta_j|\sigma^2 &\sim \mbox{Cauchy}(0,\sigma^2)\ , \\
+1/\sigma^2 &\sim \mbox{Gamma}(\nu_0/2,\nu_0\sigma_0^2/2) \ . 
 \end{aligned}
 \end{equation*}
 No nice full conditional for $\beta_j$.
@@ -840,8 +835,8 @@ sigma.species   0.958   0.114   0.767   0.876   0.947   1.028   1.211 1.001  500
 \begin{frame}{Stochastic Search Variable Selection}
 The Spike-and-Slab prior:
 \begin{eqnarray*}
-	\beta_j \mid \gamma_j, c, \tau_j^2 &\sim& (1-\gamma_j)\mathcal{N}(0, \tau_j^2)+\gamma_j \mathcal{N}(0, \tau_j^2 c^2) \\
-	\gamma_j \mid \pi_j &\sim& Bernoulli(\pi_j)
+	\beta_j \mid \gamma_j, c, \tau_j^{-1} &\sim& (1-\gamma_j)\mathcal{N}(0, \tau_j^{-1})+\gamma_j \mathcal{N}(0, \tau_j^{-1} c^2) \ ,  \\
+	\gamma_j \mid \pi_j &\sim& Bernoulli(\pi_j) \ . 
 \end{eqnarray*}
 \begin{columns}
 \begin{column}{0.5\textwidth}
@@ -851,7 +846,7 @@ The Spike-and-Slab prior:
         \begin{itemize}
             \item $\gamma_j=0$: Variable not in the model;
             \item $\gamma_j=1$:  Variable in the model;
-            \item  Calibration of hyper-parameters $c$, $\tau_j^2$ needed.
+            \item  Calibration of hyper-parameters $c$, $\tau_j^{-1}$ needed.
         \end{itemize}
     \end{column}
 \end{columns}
@@ -871,11 +866,11 @@ The Spike-and-Slab prior:
 \begin{itemize}
 \item Conjugate version:
 \[
-	\beta_j \mid \gamma_j, c, \tau_j^2 \sim (1-\gamma_j)\mathcal{N}(0, \sigma^2\tau_j^2)+\gamma_j \mathcal{N}(0, \sigma^2 \tau_j^2 c^2).
+	\beta_j \mid \gamma_j, c, \tau_j^{-1} \sim (1-\gamma_j)\mathcal{N}(0, \sigma^2\tau_j^{-1})+\gamma_j \mathcal{N}(0, \sigma^2 \tau_j^{-1} c^2).
 \]
 \item Replace the spike normal in Spike-and-Slab prior by Dirac, i.e.,
 \[
-      \beta_j \mid \gamma_j, \tau_j^2 \sim (1-\gamma_j)\delta_0+\gamma_j \mathcal{N}(0, \tau_j^2).
+      \beta_j \mid \gamma_j, \tau_j^{-1} \sim (1-\gamma_j)\delta_0+\gamma_j \mathcal{N}(0, \tau_j^{-1}).
 \]
 \end{itemize}
 \end{itemize}
@@ -901,15 +896,15 @@ sigma.species   0.966   0.117   0.767   0.884   0.960   1.036   1.218 1.001  500
 Dirac + $\mbox{N}(0,1)$
 {\tiny
 \begin{verbatim}
-beta.cdd        0.008   0.037   0.000   0.000   0.000   0.000   0.161 1.128   120
-beta.elev      -0.240   0.138  -0.450  -0.339  -0.274  -0.178   0.000 1.072    56
-beta.inso      -0.005   0.023  -0.087   0.000   0.000   0.000   0.000 1.036   490
-beta.map       -0.443   0.120  -0.603  -0.515  -0.466  -0.406   0.000 1.074    86
-beta.mat        0.018   0.085   0.000   0.000   0.000   0.000   0.290 1.053    93
-beta.ratio      0.373   0.079   0.238   0.338   0.373   0.409   0.539 1.026   290
-beta.zero      -0.058   0.149  -0.346  -0.159  -0.057   0.037   0.234 1.001  5000
-sigma.resid     0.548   0.024   0.514   0.535   0.547   0.559   0.586 1.004   940
-sigma.species   0.941   0.117   0.739   0.861   0.935   1.012   1.188 1.005   700
+beta.cdd        0.002   0.015   0.000   0.000   0.000   0.000   0.039 1.029  1100
+beta.elev      -0.277   0.112  -0.457  -0.349  -0.292  -0.224   0.000 1.016   310
+beta.inso      -0.003   0.019  -0.052   0.000   0.000   0.000   0.000 1.054   460
+beta.map       -0.473   0.075  -0.609  -0.523  -0.478  -0.429  -0.306 1.012   440
+beta.mat        0.015   0.060   0.000   0.000   0.000   0.000   0.240 1.009  1100
+beta.ratio      0.378   0.057   0.282   0.343   0.374   0.407   0.516 1.002  1800
+beta.zero      -0.061   0.151  -0.355  -0.160  -0.060   0.039   0.240 1.001  5000
+sigma.resid     0.546   0.023   0.512   0.533   0.545   0.557   0.581 1.001  5000
+sigma.species   0.948   0.116   0.750   0.868   0.939   1.019   1.193 1.002  2100
 \end{verbatim}
 }
 
@@ -920,26 +915,26 @@ sigma.species   0.941   0.117   0.739   0.861   0.935   1.012   1.188 1.005   70
 Dirac + $\mbox{N}(0,1)$
 {\tiny
 \begin{verbatim}
-beta.cdd        0.008   0.037   0.000   0.000   0.000   0.000   0.161 1.128   120
-beta.elev      -0.240   0.138  -0.450  -0.339  -0.274  -0.178   0.000 1.072    56
-beta.inso      -0.005   0.023  -0.087   0.000   0.000   0.000   0.000 1.036   490
-beta.map       -0.443   0.120  -0.603  -0.515  -0.466  -0.406   0.000 1.074    86
-beta.mat        0.018   0.085   0.000   0.000   0.000   0.000   0.290 1.053    93
-beta.ratio      0.373   0.079   0.238   0.338   0.373   0.409   0.539 1.026   290
-beta.zero      -0.058   0.149  -0.346  -0.159  -0.057   0.037   0.234 1.001  5000
-sigma.resid     0.548   0.024   0.514   0.535   0.547   0.559   0.586 1.004   940
-sigma.species   0.941   0.117   0.739   0.861   0.935   1.012   1.188 1.005   700
+beta.cdd        0.002   0.015   0.000   0.000   0.000   0.000   0.039 1.029  1100
+beta.elev      -0.277   0.112  -0.457  -0.349  -0.292  -0.224   0.000 1.016   310
+beta.inso      -0.003   0.019  -0.052   0.000   0.000   0.000   0.000 1.054   460
+beta.map       -0.473   0.075  -0.609  -0.523  -0.478  -0.429  -0.306 1.012   440
+beta.mat        0.015   0.060   0.000   0.000   0.000   0.000   0.240 1.009  1100
+beta.ratio      0.378   0.057   0.282   0.343   0.374   0.407   0.516 1.002  1800
+beta.zero      -0.061   0.151  -0.355  -0.160  -0.060   0.039   0.240 1.001  5000
+sigma.resid     0.546   0.023   0.512   0.533   0.545   0.557   0.581 1.001  5000
+sigma.species   0.948   0.116   0.750   0.868   0.939   1.019   1.193 1.002  2100
 \end{verbatim}
 }
 Posterior conditioned on $\gamma_i > 0$
 {\tiny
 \begin{verbatim}
-  beta.cdd:  0.06      0.121 (-0.028,  0.279)
- beta.elev:  0.81     -0.296 (-0.457, -0.126)*
- beta.inso:  0.06     -0.077 (-0.183,  0.031)
-  beta.map:  0.96     -0.460 (-0.604, -0.259)*
-  beta.mat:  0.14      0.135 (-0.351,  0.407)
-beta.ratio:  0.99      0.379 ( 0.264,  0.540)*
+  beta.cdd:  0.04      0.057 (-0.042,  0.168)
+ beta.elev:  0.93     -0.298 (-0.459, -0.134)*
+ beta.inso:  0.05     -0.061 (-0.188,  0.059)
+  beta.map:  1.00     -0.473 (-0.609, -0.306)*
+  beta.mat:  0.11      0.142 (-0.111,  0.367)
+beta.ratio:  1.00      0.379 ( 0.283,  0.516)*
 \end{verbatim}
 }
 \end{frame}
@@ -958,15 +953,15 @@ Typical analysis ignores model uncertainty!
 \begin{frame}{Bayesian Model Choice}
 \begin{itemize}
 \item Models for the variable selection problem are based on a
-subset of the ${\bf x}_1, \cdots, {\bf x}_p$ variables.
-\item Encode models with a vector $\boldsymbol\gamma=(\gamma_1, \cdots, \gamma_p)'$ where $\gamma_j \in \{0,1\}$ is is an indicator for whether variable ${\bf x}_j$ should be
+subset of the ${x}_1, \cdots, {x}_p$ variables.
+\item Encode models with a vector $\boldsymbol\gamma=(\gamma_1, \cdots, \gamma_p)'$ where $\gamma_j \in \{0,1\}$ is an indicator for whether variable ${x}_j$ should be
 included in the model $M_{\boldsymbol\gamma}$.  Notice $\gamma_j=0\Leftrightarrow \beta_j=0$.
 \item Each value of $\boldsymbol\gamma$ represents one of the $2^p$ models.
 \item Under model $M_{\boldsymbol\gamma}$:
 \[
-	{\bf y} \mid \boldsymbol\beta, \boldsymbol\gamma, \tau \sim \mathcal{N}({\bf X}_{\boldsymbol\gamma}\boldsymbol\beta_{\boldsymbol\gamma}, \tau^{-1}{\bf I})
+	{Y} \mid \boldsymbol\beta, \boldsymbol\gamma, \tau \sim \mathcal{N}({X}_{\boldsymbol\gamma}\boldsymbol\beta_{\boldsymbol\gamma}, \tau^{-1}{\bf I})
 \]
-where ${\bf X}_{\boldsymbol\gamma}$ is design matrix using the columns in $\bf X$ where $\gamma_j=1$ and $\boldsymbol\beta_{\boldsymbol\gamma}$ is the subset of $\boldsymbol\beta$ that are non-zero.
+where ${X}_{\boldsymbol\gamma}$ is the design matrix using the columns in $X$ where $\gamma_j=1$ and $\boldsymbol\beta_{\boldsymbol\gamma}$ is the subset of $\boldsymbol\beta$ that are non-zero.
 \end{itemize}
 \end{frame}
 
@@ -978,13 +973,13 @@ the data).
 \begin{itemize}
 \item Posterior model probabilities
 \[
-	{\rm P}(M_j \mid {\bf y})=\frac{{\rm P}({\bf y}\mid M_j){\rm P}(M_j)}{\sum_{j}{\rm P}({\bf y}\mid M_j){\rm P}(M_j)},
+	{\rm P}(M_j \mid {Y})=\frac{{\rm P}({Y}\mid M_j){\rm P}(M_j)}{\sum_{j}{\rm P}({Y}\mid M_j){\rm P}(M_j)},
 \]
 Marginal likelihod of a model is
 \[
-	{\rm P}({\bf y}\mid M_{\boldsymbol\gamma})=\int \int {\rm P}({\bf y} \mid \boldsymbol\beta_{\boldsymbol\gamma}, \tau) {\rm P}(\boldsymbol\beta_{\boldsymbol\gamma} \mid \boldsymbol\gamma, \tau) {\rm P}(\tau \mid \boldsymbol\gamma) d\boldsymbol\beta_{\boldsymbol\gamma} d\tau.
+	{\rm P}({Y}\mid M_{\boldsymbol\gamma})=\int \int {\rm P}({Y} \mid \boldsymbol\beta_{\boldsymbol\gamma}, \tau) {\rm P}(\boldsymbol\beta_{\boldsymbol\gamma} \mid \boldsymbol\gamma, \tau) {\rm P}(\tau \mid \boldsymbol\gamma) d\boldsymbol\beta_{\boldsymbol\gamma} d\tau.
 \]
-\item Probability $\beta_j\neq 0$: $\sum_{M_j: \beta_j\neq 0} {\rm P}(M_j \mid {\bf y})$.
+\item Probability $\beta_j\neq 0$: $\sum_{M_j: \beta_j\neq 0} {\rm P}(M_j \mid {Y})$.
 \end{itemize}
 \end{frame}
 
@@ -992,11 +987,11 @@ Marginal likelihod of a model is
 \begin{itemize}
 \item Predictions
 \[
-	{\rm P}({\bf y}^{new} \mid {\bf y})=\sum_{j} {\rm P}({\bf y}^{new} \mid {\bf y}, M_j) {\rm P}(M_j \mid {\bf y}),
+	{\rm P}({Y}^{new} \mid {Y})=\sum_{j} {\rm P}({Y}^{new} \mid {Y}, M_j) {\rm P}(M_j \mid {Y}),
 \]
 where
 \[
-	{\rm P}({\bf y}^{new} \mid {\bf y}, M_{\boldsymbol\gamma})=\int {\rm P}({\bf y}^{new} \mid {\bf y}, \boldsymbol\beta_{\boldsymbol\gamma}, \tau) {\rm P}(\boldsymbol\beta_{\boldsymbol\gamma}, \tau \mid {\bf y}) d \boldsymbol\beta_{\boldsymbol\gamma} d\tau.
+	{\rm P}({Y}^{new} \mid {Y}, M_{\boldsymbol\gamma})=\int {\rm P}({Y}^{new} \mid {Y}, \boldsymbol\beta_{\boldsymbol\gamma}, \tau) {\rm P}(\boldsymbol\beta_{\boldsymbol\gamma}, \tau \mid {Y}) d \boldsymbol\beta_{\boldsymbol\gamma} d\tau.
 \]
 
 \end{itemize}
