@@ -2,7 +2,7 @@ LaTeX source, R scripts, JAGS scripts, and associated files for a
 short, introductory workshop on Bayesian inference using R and
 JAGS. Presented by Kent Holsinger and Xiaojing Wang, University of
 Connecticut as part of
-<a href="https://docs.google.com/document/d/1YK8HOUeYxjf_JljEXSrhCI5udhxyxshLCAzpVgb4_uI/edit#heading=h.m7urb75msfsi"
+<a href="https://docs.google.com/document/d/1YK8HOUeYxjf_JljEXSrhCI5udhxyxshLCAzpVgb4_uI/edit#heading=h.m7urb75msfsi">
 Plant Diversity in the GCFR: From Genomes to Biomes</a>, 20-22 July 2015,
 Colophon Room, SANBI, Kirstenbosch, South Africa.
 
