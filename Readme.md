@@ -14,6 +14,10 @@ Windoze, Mac OS X, Linux, and other platforms):
 <ul>
 <li> R http://cran.r-project.org/</li>
 <li> JAGS http://sourceforge.net/projects/mcmc-jags/</li>
+<li> R2jags package within R<br />
+<pre>
+install.packages("R2jags")
+</pre>
 </ul>
 </li>
 <li>Optional (interfaces for working with R)
