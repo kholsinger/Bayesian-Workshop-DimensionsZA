@@ -204,26 +204,6 @@ If $\alpha>1$ set $\theta_j^{(t+1)}=\theta_j^{*}$
 
 \end{frame}
 
-% \begin{frame}{Metropolis Algorithm}
-% Simplest version is called Random-Walk Metropolis
-% \begin{itemize}
-% \item Take $q(\theta|\theta(t))$ to be a symmetric density
-% \item Normal density centered at $\theta^{(t)}$ with variance $c^2$
-% \item ratio of proposals cancels!
-% \end{itemize}
-% \hfill \break
-% \texttt{\small{
-% thetastar = rnorm(1, theta[t], c)\\
-% alpha = min(1, ((logL(thetastar) + logprior(thetastar) -(logL(theta[t]) +logprior(theta[t])))\\
-% u = log(runif(1))\\
-% theta[t+1] = theta[t]\\
-% if (u < alpha) theta[t+1] = thetastar}
-% }
-% \hfill \break
-
-% Can repeat for each $\theta_j$.
-% \end{frame}
-
 \begin{frame}{Linear Regression - as a Bayesian}
 
 We start with the sampling model $p(y \mid \theta)$, where $\theta=(\beta_0, \beta_1, \sigma^2)'$, 
@@ -268,6 +248,59 @@ mat         -3.131e-01  4.114e-02  -7.611 1.24e-13 ***
 Residual standard error: 0.9506 on 533 degrees of freedom
 \end{verbatim}
 }
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Robust Regression}
+
+\begin{itemize}
+
+\item What do we do with outliers?
+
+\begin{center}
+\includegraphics[height=5.5cm]{lma-outlier.pdf}
+\end{center}
+
+\item Could delete the observation if we have good evidence that it's
+  an error.
+
+\item Probably better to use an approach that leaves the data in and
+  gives less weight to outliers.
+
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Robust Regression\footnote{robust-linear-regression.jags}}
+
+\begin{itemize}
+
+\item Use a Cauchy distribution (``fat tails'') instead of normal for
+  prior on regression coefficients and residual error.\footnote{t
+    distribution with 1 degree of freedom in JAGS}
+
+\vfill
+
+\begin{center}
+\begin{tabular}{llcc}
+\hline\hline
+       &          &\multicolumn{2}{c}{Coefficient estimates} \\
+Model  & Data set & $\beta_0$ & $\beta_{MAT}$ \\
+\hline
+Simple & Original & 0.000     & -0.313 \\
+       & Modified & 0.028     & -0.372 \\
+Robust & Original & -0.078    & -0.294 \\
+       & Modified & -0.079    & -0.293 \\
+\hline
+\end{tabular}
+\end{center}
+
+\vfil
+
+\item Estimates not affected by extreme outlier when using Cauchy
+  prior.
+
 \end{itemize}
 
 \end{frame}
