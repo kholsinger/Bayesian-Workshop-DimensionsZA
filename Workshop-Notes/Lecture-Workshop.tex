@@ -183,7 +183,7 @@ that's the approach we'll use.
 \begin{frame}{Metropolis-Hastings Algorithm}
 For $\theta_j$
 \begin{itemize}
-\item Propose a new $\theta_j^*\sim q(\theta_j^{(t)} | \theta_j^t)$
+\item Propose a new $\theta_j^*\sim q(\theta_j^* | \theta_j^{(t)})$
 \item Calculate Metropolis-Hastings ratio
 \[
 \alpha=\frac{p({Y}|\theta_j^*)p(\theta_j^*)/q(\theta_j^*|\theta_j^{(t)})}{p({Y}|\theta_j^{(t)})p(\theta_j^{(t)})/q(\theta_j^{(t)}|\theta_j^*)}
@@ -367,12 +367,12 @@ Residual standard error: 0.9373 on 528 degrees of freedom
 \begin{eqnarray*}
 y_i &\sim& \mbox{N}(\mu_i, \sigma^2_{resid})\ ,  \\
 \mu_i &=& \beta_0 + \sum_{k=1}^K\beta_kx_{ik} + \gamma_i^{(s)}\ , \\
-\beta_k &\sim& \mbox{N}(0, \tau^{-1}), \quad k = 0,\dots,K \ , \\
 \sigma^2_{resid} &=& \frac{1}{\tau_{resid}} \ ,  \\
 \tau_{resid} &\sim& \mbox{Gamma}(1,\phi) \ , \\
 \gamma_i^{(s)} &\sim& \mbox{N}(0, \sigma^2_{species}) \ ,  \\
 \sigma^2_{species} &=& \frac{1}{\tau_{species}}\ ,  \\
-\tau_{species} &\sim& \mbox{Gamma}(1,\phi) \ . 
+\tau_{species} &\sim& \mbox{Gamma}(1,\phi) , \\
+\beta_k &\sim& \mbox{N}(0, \tau^{-1}), \quad k = 0,\dots,K \ . \\
 \end{eqnarray*}
 
 \end{frame}
@@ -388,7 +388,7 @@ y_i &\sim& \mbox{N}(\mu_i, \sigma^2_{resid})\ ,  \\
 \beta_{0i}^{(s)} &\sim& \mbox{N}(\beta_0, \sigma^2_{species}) \ ,  \\
 \sigma^2_{species} &=& \frac{1}{\tau_{species}} \ , \\
 \tau_{species} &\sim& \mbox{Gamma}(1,\phi) \ , \\
-\beta_i &\sim& \mbox{N}(0, \tau), \quad i = 0,\dots,K\ . \\
+\beta_k &\sim& \mbox{N}(0, \tau^{-1}), \quad k = 0,\dots,K\ . \\
 \end{eqnarray*}
 
 \end{frame}
@@ -654,6 +654,23 @@ where ${X}_{\boldsymbol\gamma}$ is the design matrix using the columns in $X$ wh
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Bayesian Model Model Choice ({\it Protea\/} data)}
+
+\begin{center}
+\includegraphics[width=0.8\textwidth]{ecology-beta.pdf}
+\end{center}
+
+\end{frame}
+
+
+\begin{frame}{Bayesian Model Model Choice ({\it Protea\/} data)}
+
+\begin{center}
+\includegraphics[height=0.8\textheight]{ecology-image.pdf}
+\end{center}
+
+\end{frame}
+
 \begin{frame}{Bayesian Model Averaging}
 Rather than use a single model, BMA uses all (or potentially a lot)
 models, but weights model predictions by their posterior
@@ -685,141 +702,5 @@ where
 
 \end{itemize}
 \end{frame}
-
-% \begin{frame}{Prior Distributions}
-% \begin{itemize}
-% \item Bayesian Model choice requires proper prior distributions on
-% regression coefficients.
-% \item Vague but proper priors may lead to paradoxes!
-% % \item Conjugate Normal-Gammas lead to closed form expressions
-% % for marginal likelihoods, Zellner's g-prior is the most popular.
-% \end{itemize}
-% \end{frame}
-
-% \begin{frame}{Zellner's g-prior}
-% Centered model:
-% \[
-% 		{\bf y}={\bf 1}_n \alpha+ \tilde{\bf X}_c\boldsymbol\beta+\boldsymbol\epsilon,
-% \]
-% where $\tilde{\bf X}_c=({\bf I}_n-1/n {\bf J}_n){\bf X}$ is the centered design matrix where all variables have had their mean subtracted.
-% \begin{itemize}
-% \item $\pi(\alpha)\propto 1$;
-% \item $\pi(\tau)\propto 1/\tau$;
-% \item $\boldsymbol\beta \mid \tau, \boldsymbol\gamma \sim \mathcal{N}({\bf 0}, g\tau^{-1} (\tilde{\bf X}_c'\tilde{\bf X}_c)^{-1})$;
-% \item take $g=n$.
-% \end{itemize}
-% which leads to marginal likelihood of $M_{\boldsymbol\gamma}$ that is proportional to
-% \[
-% 	{\rm P}({\bf y} \mid M_{\boldsymbol\gamma}, g)\propto \frac{(1+g)^{(n-p_{\boldsymbol\gamma}-1)/2}}{(1+g(1-R_{\boldsymbol\gamma}^2))^{(n-1)/2}},
-% \]
-% where $R_{\boldsymbol\gamma}^2$ is the ordinary coefficient of determination of regression model $M_{\boldsymbol\gamma}$.
-
-% Lastly, assign uniform distribution to space of models.
-% \end{frame}
-
-
-
-% \begin{frame}{Air Pollution Data}
-% \begin{itemize}
-% \item Response $SO_2$ measurements in $41$ metropolitan areas.
-% \item Predictors:
-% \begin{itemize}
-% \item temp
-% \item mfgfirms
-% \item popn
-% \item wind
-% \item precip
-% \item raindays
-% \end{itemize}
-% Model for $SO_2$ as a function of the other variables?
-% \end{itemize}
-% \end{frame}
-
-% \begin{frame}{Scatterplot Matrix}
-% Original Variables\\
-% \begin{center}
-% \includegraphics[scale=0.5]{SMP}
-% \end{center}
-% \end{frame}
-
-% \begin{frame}{Scatterplot Matrix}
-% Transformed Predictor Variables\\
-% \begin{center}
-% \includegraphics[scale=0.275]{p_22}
-% \end{center}
-% \end{frame}
-
-% \begin{frame}{Residual Plots}
-% \begin{center}
-% \includegraphics[scale=0.275]{p_21}
-% \end{center}
-% \end{frame}
-
-% \begin{frame}{BoxCox Profile Likelihood}
-% \begin{center}
-% \includegraphics[scale=0.275]{p_bc}
-% \end{center}
-% $\lambda\approx-0.5$.
-% \end{frame}
-
-% \begin{frame}{Residual Plots}
-% \begin{center}
-% \includegraphics[scale=0.275]{p_23}
-% \end{center}
-% \end{frame}
-
-% \begin{frame}
-% \begin{table}[ht]
-% \centering
-% \caption{Least Squares Estimates of the Coefficients}
-% \begin{tabular}{rrrrr}
-%   \hline
-%  & Estimate & Std. Error & t value & Pr($>$$|$t$|$) \\
-%   \hline
-% (Intercept) & -0.2287 & 0.1594 & -1.43 & 0.1605 \\
-%   temp & 0.0076 & 0.0022 & 3.46 & {\color{red}0.0015} \\
-%   log(mfgfirms) & -0.0284 & 0.0187 & -1.52 & 0.1389 \\
-%   log(popn) & 0.0097 & 0.0226 & 0.43 & 0.6713 \\
-%   wind & 0.0216 & 0.0064 & 3.39 & {\color{red}0.0018} \\
-%   precip & -0.0018 & 0.0013 & -1.39 & 0.1746 \\
-%   raindays & -0.0001 & 0.0006 & -0.21 & 0.8327 \\
-%    \hline
-% \end{tabular}
-% \end{table}
-% \end{frame}
-
-% \begin{frame}{Pollution Example}
-% \begin{itemize}
-% \item Temperature is a significant predictor of $SO_2$ according to the $p$-value.
-% \item Lower bound on Bayes Factor
-% \[
-% 	BF[H_0: H_a]=-e p \log(p)=0.027
-% \]
-% Here $p$ is the $p$-value.
-% \item Strong evidence against that the ccoefficient of Temperature is zero.
-% \end{itemize}
-% \end{frame}
-
-% \begin{frame}{USair Data}
-% \begin{center}
-% \includegraphics[scale=0.25]{p_a}
-% \end{center}
-% \end{frame}
-
-% \begin{frame}{Model Space}
-% \begin{center}
-% \includegraphics[scale=0.4]{poll_image}
-% \end{center}
-% \end{frame}
-
-% \begin{frame}{Coefficient}
-% \begin{center}
-% \includegraphics[scale=0.5]{poll_beta}
-% \end{center}
-% \end{frame}
-
-
-
-
 
 \end{document}
